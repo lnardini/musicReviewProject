@@ -38,7 +38,7 @@ public class Main {
 
 
             // Beginning loop
-            // Idea: repeatedly take in commands and exexute them until user logs out
+            // Idea: repeatedly take in commands and execute them until user logs out
             while (true) {
                 System.out.println("Please enter your next command. Enter 'help' for usage information or 'quit' to terminate the application.");
                 String command = input.next();
@@ -58,6 +58,17 @@ public class Main {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Takes in a review command and prompts the user for review input
+     * @param command
+     * @return The SQL command for adding a review
+     */
+    static String createReviewCommand(String command) {
+        String reviewStr = "";
+
+        return reviewStr;
     }
 
 
