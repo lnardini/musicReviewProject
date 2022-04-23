@@ -1,3 +1,8 @@
 1. Finish input parsing / sanitation
-2. Handle review updates: update entity stars when review is added
-3. Predefined functions for reading/writing reviews?
+    - Handle deleting reviews and accounts
+    - Handle updating account information?
+2. SQL useful functions
+    - Get stars for entity
+3. Add dummy data to tuples
+
+
