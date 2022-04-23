@@ -1,13 +1,9 @@
 package com.company;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import com.mysql.cj.x.protobuf.MysqlxPrepare;
+
+import java.sql.*;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,10 +15,12 @@ public class Main {
     static final String USAGE = " ";
 
     // Argument String constants
-    static final String ALLGENRE = "-allGenre";
-    static final String ANYGENRE = "-anyGenre";
-    static final String AUTHOR = "-author";
-    static final String SORT = "-sort";
+    static final String ALLGENRE = "--allGenre";
+    static final String ANYGENRE = "--anyGenre";
+    static final String AUTHOR = "--author";
+    static final String SORT = "--sort";
+
+    static final List<String> FLAGS = Arrays.asList(ALLGENRE, ANYGENRE, AUTHOR, SORT);
 
 
     public static void main(String[] args) {
@@ -48,7 +46,7 @@ public class Main {
                 }
                 else if (command.equalsIgnoreCase("help")) {
                     System.out.println(USAGE);
-                    break;
+                    continue;
                 }
                 Map<String, List<String>> arguments = Main.parseCommand(command);
                 // TODO: Use arguments to construct query
@@ -66,7 +64,9 @@ public class Main {
      * @return The SQL command for adding a review
      */
     static String createReviewCommand(String command) {
-        String reviewStr = "";
+        List<String> argList = Stream.of(command.split(" ")).collect(Collectors.toList());
+        String reviewStr = "INSERT INTO %s VALUES (%f, %s, %s, %t, %d)";
+
 
         return reviewStr;
     }
@@ -76,6 +76,27 @@ public class Main {
         Map<String, List<String>> args = new HashMap<>();
         List<String> argList = Stream.of(command.split(" ")).collect(Collectors.toList());
         // TODO: Parse arguments into usable map
+        String baseCmd = argList.get(0);
+        args.put("COMMAND", Arrays.asList(baseCmd));
+        // parsing options
+        for (int i = 1; i < argList.size(); i++) {
+            String arg = argList.get(i);
+            if (!arg.startsWith("--")) { // not flag argument
+                continue;
+            }
+            List<String> values = new ArrayList<>();
+            int j = i + 1;
+            while (j < argList.size() && !argList.get(j).startsWith("--")) {
+                values.add(argList.get(j));
+                j+= 1;
+            }
+            if (FLAGS.contains(arg)) {
+                args.put(arg, values);
+            } else {
+                   //TODO: Unrecognized flag
+            }
+        }
+
         return args;
     }
 }
