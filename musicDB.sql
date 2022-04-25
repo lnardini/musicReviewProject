@@ -207,3 +207,48 @@ CREATE TABLE songInstruments(
     CONSTRAINT songInstruments_song_fk FOREIGN KEY (song_id) REFERENCES song(song_id) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT songInstruments_instrument_fk FOREIGN KEY (instrumentName) REFERENCES instruments(instrumentName) ON DELETE SET NULL ON UPDATE CASCADE
 );
+
+-- Gets the average star rating for a song
+DROP FUNCTION IF EXISTS avgSongRating;
+DELIMITER $$
+CREATE FUNCTION avgSongRating(songID INT)
+  RETURNS DOUBLE
+  DETERMINISTIC
+  READS SQL DATA
+  BEGIN
+  DECLARE ret_val DOUBLE;
+  SELECT AVG(stars) INTO ret_val FROM songReview WHERE songReview.song_id = songID;
+  RETURN ret_val;
+  END$$
+
+DELIMITER ;
+
+-- Gets the average star rating for an album
+DROP FUNCTION IF EXISTS avgAlbumRating;
+DELIMITER $$
+CREATE FUNCTION avgAlbumRating(albumID INT)
+  RETURNS DOUBLE
+  DETERMINISTIC
+  READS SQL DATA
+  BEGIN
+  DECLARE ret_val DOUBLE;
+  SELECT AVG(stars) INTO ret_val FROM albumReview WHERE albumReview.album_id = albumID;
+  RETURN ret_val;
+  END$$
+
+DELIMITER ;
+
+-- Gets the average star rating for an artist
+DROP FUNCTION IF EXISTS avgArtistRating;
+DELIMITER $$
+CREATE FUNCTION avgArtistRating(artistID INT)
+  RETURNS DOUBLE
+  DETERMINISTIC
+  READS SQL DATA
+  BEGIN
+  DECLARE ret_val DOUBLE;
+  SELECT AVG(stars) INTO ret_val FROM artistReview WHERE artistReview.artist_id = artistID;
+  RETURN ret_val;
+  END$$
+
+DELIMITER ;
