@@ -252,3 +252,142 @@ CREATE FUNCTION avgArtistRating(artistID INT)
   END$$
 
 DELIMITER ;
+
+-- GENRE JOINS
+
+-- joins a song with song's genre
+DROP PROCEDURE IF EXISTS songJoinGenre;
+DELIMITER $$
+CREATE PROCEDURE songJoinGenre(IN song_id INT)
+	BEGIN
+	SELECT * FROM song LEFT JOIN songgenres
+	ON song.song_id = songgenres.song_id;
+	END $$
+DELIMITER ;
+
+-- joins an artist with song's genre
+DROP PROCEDURE IF EXISTS artistJoinGenre;
+DELIMITER $$
+CREATE PROCEDURE artistJoinGenre(IN artist_id INT)
+	BEGIN
+	SELECT * FROM artist LEFT JOIN artistgenres
+	ON artist.artist_id = artistgenre.artist_id;
+	END $$
+DELIMITER ;
+
+-- joins an album with song's genre
+DROP PROCEDURE IF EXISTS albumJoinGenre;
+DELIMITER $$
+CREATE PROCEDURE albumJoinGenre(IN album_id INT)
+	BEGIN
+	SELECT * FROM album LEFT JOIN albumgenres
+	ON album.album_id = albumgenre.album_id;
+	END $$
+DELIMITER ;
+
+-- INSTRUMENT JOINS
+
+-- joins a song with the song's instruments
+DROP PROCEDURE IF EXISTS songJoinInstruments;
+DELIMITER $$
+CREATE PROCEDURE songJoinInstruments(IN song_id INT)
+	BEGIN
+	SELECT * FROM song LEFT JOIN songinstruments
+	ON song.song_id = songinstruments.song_id;
+	END $$
+DELIMITER ;
+
+-- joins an artist with the artist's instruments
+DROP PROCEDURE IF EXISTS artistJoinInstruments;
+DELIMITER $$
+CREATE PROCEDURE artistJoinInstruments(IN artist_id INT)
+	BEGIN
+	SELECT * FROM artist LEFT JOIN artistinstruments
+	ON artist.artist_id = artistinstruments.artist_id;
+	END $$
+DELIMITER ;
+
+-- REVIEW JOINS
+
+-- joins a song review with the song it is reviewing
+DROP PROCEDURE IF EXISTS songJoinReview;
+DELIMITER $$
+CREATE PROCEDURE songJoinReview(IN reviewID INT)
+	BEGIN
+	SELECT * FROM song LEFT JOIN songreview
+	ON song.song_id = songreview.song_id;
+	END $$
+DELIMITER ;
+
+-- joins an album review with the album it is reviewing
+DROP PROCEDURE IF EXISTS albumJoinReview;
+DELIMITER $$
+CREATE PROCEDURE albumJoinReview(IN reviewID INT)
+	BEGIN
+	SELECT * FROM album LEFT JOIN albumreview
+	ON album.album_id = albumreview.album_id;
+	END $$
+DELIMITER ;
+
+-- joins an artist review with the artist it is reviewing
+DROP PROCEDURE IF EXISTS artistJoinReview;
+DELIMITER $$
+CREATE PROCEDURE artistJoinReview(IN reviewID INT)
+	BEGIN
+	SELECT * FROM artist LEFT JOIN artistreview
+	ON artist.artist_id = artistreview.artist_id;
+	END $$
+DELIMITER ;
+
+-- DELETING REVIEWS
+-- Delete a song review
+DROP PROCEDURE IF EXISTS deleteSongReview;
+DELIMITER $$
+CREATE PROCEDURE deleteSongReview( IN reviewID INT)
+	BEGIN
+	DELETE FROM songreview
+	WHERE reviewID = songreview.reviewID;
+	END $$
+DELIMITER ;
+
+-- Delete an artist review
+DROP PROCEDURE IF EXISTS deleteArtistReview;
+DELIMITER $$
+CREATE PROCEDURE deleteArtistReview( IN reviewID INT)
+	BEGIN
+	DELETE FROM artistreview
+	WHERE reviewID = artist.reviewID;
+	END $$
+DELIMITER ;
+
+-- Delete an album review
+DROP PROCEDURE IF EXISTS deleteAlbumReview;
+DELIMITER $$
+CREATE PROCEDURE deleteAlbumReview( IN reviewID INT)
+	BEGIN
+	DELETE FROM albumreview
+	WHERE reviewID = album.reviewID;
+	END $$
+DELIMITER ;
+
+-- DELETING ACCOUNTS
+
+-- Delete an artist user account
+DROP PROCEDURE IF EXISTS deleteArtistUser;
+DELIMITER $$
+CREATE PROCEDURE deleteArtistUser( IN artist_id INT)
+	BEGIN
+	DELETE FROM artistuser
+	WHERE artist_id = artistuser.artist_id;
+	END $$
+DELIMITER ;
+
+-- Delete a review user account
+DROP PROCEDURE IF EXISTS deleteReviewerUser;
+DELIMITER $$
+CREATE PROCEDURE deleteReviewerUser( IN username INT)
+	BEGIN
+	DELETE FROM revieweruser
+	WHERE username = revieweruser.username;
+	END $$
+DELIMITER ;
