@@ -142,7 +142,7 @@ public class Main {
                         query = createReviewCommand(command);
                         statementToExecute = conn.prepareStatement(query);
                         break;
-                    case "list":
+                    case "list": //TODO: Most of it. Need to formulate query with sorting and stars
                         boolean anyOptions = arguments.containsKey(STARS) || arguments.containsKey(GENRE) || arguments.containsKey(AUTHOR);
                         query = "SELECT * FROM " + entityType.concat(anyOptions? "WHERE" : "");
                         if (arguments.containsKey(STARS)) {
@@ -151,8 +151,8 @@ public class Main {
 
                         }
                         break;
-                    case "reviews": //seemingly done, needs testing
-                        query = "SELECT stars, reviewDescription, reviewDate FROM " + entityType.concat("Review");
+                    case "reviews": //TODO: Integrate review procedures as well as sorting and stars
+                        query = "CALL " + entityType + "JoinReview";
                         if (arguments.containsKey(SORT)) {
                             query = query.concat("ORDER BY").concat(String.join(" ", arguments.get(SORT)));
                         }

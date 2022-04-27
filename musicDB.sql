@@ -356,7 +356,7 @@ DELIMITER $$
 CREATE PROCEDURE deleteArtistReview( IN reviewID INT)
 	BEGIN
 	DELETE FROM artistreview
-	WHERE reviewID = artist.reviewID;
+	WHERE reviewID = artistreview.reviewID;
 	END $$
 DELIMITER ;
 
