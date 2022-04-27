@@ -10,9 +10,7 @@ DROP TABLE IF EXISTS instruments;
 DROP TABLE IF EXISTS songReview;
 DROP TABLE IF EXISTS albumReview;
 DROP TABLE IF EXISTS artistReview;
-DROP TABLE IF EXISTS artistUser;
 DROP TABLE IF EXISTS reviewerUser;
-DROP TABLE IF EXISTS adminUser;
 DROP TABLE IF EXISTS artistGenres;
 DROP TABLE IF EXISTS albumGenres;
 DROP TABLE IF EXISTS songGenres;
@@ -129,12 +127,6 @@ CREATE TABLE artistGenres(
     CONSTRAINT artistGenres_genre_fk FOREIGN KEY (genre) REFERENCES genre(genreName) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
--- Accounts
-CREATE TABLE adminUser(
-	username VARCHAR(64) PRIMARY KEY,
-    userPassword VARCHAR(64),
-    email VARCHAR(64)
-);
 
 CREATE TABLE reviewerUser(
 	username VARCHAR(64) PRIMARY KEY,
@@ -144,13 +136,6 @@ CREATE TABLE reviewerUser(
 	name VARCHAR(80)
 );
 
-CREATE TABLE artistUser(
-	username VARCHAR(64) PRIMARY KEY,
-    userPassword VARCHAR(64),
-    email VARCHAR(64),
-    artist_id INT,
-    CONSTRAINT artistUser_artist_fk FOREIGN KEY (artist_id) REFERENCES artist(artist_id) ON DELETE SET NULL ON UPDATE CASCADE
-);
 
 -- Reviews
 CREATE TABLE artistReview(
@@ -372,15 +357,7 @@ DELIMITER ;
 
 -- DELETING ACCOUNTS
 
--- Delete an artist user account
-DROP PROCEDURE IF EXISTS deleteArtistUser;
-DELIMITER $$
-CREATE PROCEDURE deleteArtistUser( IN artist_id INT)
-	BEGIN
-	DELETE FROM artistuser
-	WHERE artist_id = artistuser.artist_id;
-	END $$
-DELIMITER ;
+
 
 -- Delete a review user account
 DROP PROCEDURE IF EXISTS deleteReviewerUser;
@@ -391,3 +368,228 @@ CREATE PROCEDURE deleteReviewerUser( IN username INT)
 	WHERE username = revieweruser.username;
 	END $$
 DELIMITER ;
+
+
+
+-- Creating a Song Review
+
+DELIMITER ;
+DROP PROCEDURE IF EXISTS createSongReview;
+DELIMITER $$
+CREATE PROCEDURE createSongReview(stars_p DOUBLE, reviewer_p VARCHAR(64),
+	reviewDescription_p VARCHAR(256),
+	reviewDate date, songName_p VARCHAR(64))
+	BEGIN
+		DECLARE reviewIdVal INT;
+		DECLARE songIdVal INT;
+		SELECT 
+    MAX(reviewId) + 1
+INTO reviewIdVal FROM
+    songreview;
+		IF reviewIdVal IS NULL THEN SET reviewIdVal = 1;
+		END IF;
+		SELECT 
+    song_id
+INTO songIdVal FROM
+    song
+WHERE
+    song.songName = songName_p;
+		INSERT INTO songreview(reviewId, stars, reviewDescription, reviewer, reviewDate, song_id)
+			VALUES (reviewIdVal, stars_p,
+				reviewDescription_p, reviewer_p,
+				reviewDate, songIdVal);
+	END $$
+DELIMITER ;
+
+-- Creating an Artist Review
+
+DELIMITER ;
+DROP PROCEDURE IF EXISTS createArtistReview;
+DELIMITER $$
+CREATE PROCEDURE createArtistReview(stars_p DOUBLE, reviewer_p VARCHAR(64),
+reviewDescription_p VARCHAR(256),
+reviewDate date, artistName_p VARCHAR(64))
+BEGIN
+DECLARE reviewIdVal INT;
+DECLARE artistIdVal INT;
+SELECT 
+    MAX(reviewId) + 1
+INTO reviewIdVal FROM
+    artistreview;
+IF reviewIdVal IS NULL THEN SET reviewIdVal = 1;
+END IF;
+SELECT 
+    artist_id
+INTO artistIdVal FROM
+    artist
+WHERE
+    artist.ArtistName = artistName_p;
+INSERT INTO artistreview(reviewId, stars, reviewDescription, reviewer, reviewDate, artist_id)
+VALUES (reviewIdVal, stars_p,
+reviewDescription_p, reviewer_p,
+reviewDate, artistIdVal);
+END $$
+DELIMITER ;
+
+-- Creating an Album Review
+
+DELIMITER ;
+DROP PROCEDURE IF EXISTS createAlbumReview;
+DELIMITER $$
+CREATE PROCEDURE createAlbumReview(stars_p DOUBLE, reviewer_p VARCHAR(64),
+reviewDescription_p VARCHAR(256),
+reviewDate date, albumName_p VARCHAR(64))
+BEGIN
+DECLARE reviewIdVal INT;
+DECLARE albumIdVal INT;
+SELECT 
+    MAX(reviewId) + 1
+INTO reviewIdVal FROM
+    albumreview;
+IF reviewIdVal IS NULL THEN SET reviewIdVal = 1;
+END IF;
+SELECT 
+    album_id
+INTO albumIdVal FROM
+    album
+WHERE
+    album.AlbumName = albumName_p;
+INSERT INTO albumreview(reviewId, stars, reviewDescription, reviewer, reviewDate, album_id)
+VALUES (reviewIdVal, stars_p,
+reviewDescription_p, reviewer_p,
+reviewDate, albumIdVal);
+END $$
+DELIMITER ;
+
+
+-- Dummy Data
+
+
+-- REVIEWER USERS Data
+INSERT INTO revieweruser(username, userPassword, email, dateJoined, name)
+VALUES ("Maggie", "Password", "maggieclark2001@gmail.com", "2019-08-11", "Maggie");
+
+INSERT INTO revieweruser(username, userPassword, email, dateJoined, name)
+VALUES ("Luke", "Password", "luke@gmail.com", "2019-07-11", "Luke");
+
+INSERT INTO revieweruser(username, userPassword, email, dateJoined, name)
+VALUES ("Jake", "Password", "jake@gmail.com", "2018-08-11", "Jake");
+
+-- GENRE DATA
+INSERT INTO genre(genreName, description) VALUES ("Pre-K", "Music for children");
+INSERT INTO genre(genreName, description) VALUES ("Country", "Country music");
+INSERT INTO genre(genreName, description) VALUES ("Classical", "Classical music");
+
+-- PRODUCER DATA
+INSERT INTO producer(producer_id, producerName, foundedDate) VALUES
+(1, "Producer1", "2020-08-11");
+INSERT INTO producer(producer_id, producerName, foundedDate) VALUES
+(2, "Producer2", "1236-06-11");
+
+
+
+-- Instrument Data
+INSERT INTO instruments(instrumentName, instrumentDescription) VALUES ("Guitar", "A guitar");
+INSERT INTO instruments(instrumentName, instrumentDescription) VALUES ("Classical band", "Violin, Cello, Flute, Clarinet");
+
+-- ARTIST DATA
+INSERT INTO artist(artist_id, producer_id, artistName, numMembers) VALUES
+(1, 1, "Spider", 1);
+INSERT INTO artist(artist_id, producer_id, artistName, numMembers) VALUES
+(2, 1, "Johnny Cash", 1);
+INSERT INTO artist(artist_id, producer_id, artistName, numMembers) VALUES
+(3, 1, "Mozart", 1);
+
+-- artist genres
+INSERT INTO artistgenres(artist_id, genre) VALUES (1, "Pre-K");
+INSERT INTO artistgenres(artist_id, genre) VALUES (2, "Country");
+INSERT INTO artistgenres(artist_id, genre) VALUES (3, "Classical");
+
+-- artist instruments
+INSERT INTO artistinstruments(artist_id, instrumentName) VALUES (1, NULL);
+INSERT INTO artistinstruments(artist_id, instrumentName) VALUES (2, "Guitar");
+INSERT INTO artistinstruments(artist_id, instrumentName) VALUES (3, "Classical band");
+
+-- artist review
+CALL createArtistReview(5, "Maggie", "Example review", "2021-08-12", "Spider");
+CALL createAlbumReview(4, "Luke", "Example review", "2021-10-11", "Johnny Cash");
+CALL createAlbumReview(3, "Jake", "Example review", "2021-11-11", "Mozart");
+
+
+
+-- ALBUMS DATA
+INSERT INTO album(album_id, albumname, releasedate, numberSold, artist_id, producer_id)
+VALUES (1, "Itsy Bitsy Spider Hits", "2021-08-08", 50000, 1, 1);
+INSERT INTO album(album_id, albumname, releasedate, numberSold, artist_id, producer_id)
+VALUES (2, "Johnny Cash Hits", "2021-08-05", 70000, 2, 1);
+INSERT INTO album(album_id, albumname, releasedate, numberSold, artist_id, producer_id)
+VALUES (3, "Mozart Hits", "2021-08-05", 100000, 3, 2);
+
+-- SONGS DATA
+INSERT INTO song(song_id, songName, producer_id, dateReleased, songLength, album_id)
+VALUES (1, "Itty Bitty Spider", 1, "2021-08-11", 3, 1);
+INSERT INTO song(song_id, songName, producer_id, dateReleased, songLength, album_id)
+VALUES (2, "Folsom Prison Blues", 1, "1960-08-11", 3, 2);
+INSERT INTO song(song_id, songName, producer_id, dateReleased, songLength, album_id)
+VALUES (3, "Ring of Fire", 1, "1963-08-11", 3, 2);
+INSERT INTO song(song_id, songName, producer_id, dateReleased, songLength, album_id)
+VALUES (4, "Ave Verum Corpus", 1, "1780-08-11", 6, 3);
+INSERT INTO song(song_id, songName, producer_id, dateReleased, songLength, album_id)
+VALUES (5, "Fantasia in D Minor, K. 397", 1, "1782-08-11", 7, 3);
+
+-- artist albums
+INSERT INTO artistsalbums(artist_id, album_id) VALUES (1, 1);
+INSERT INTO artistsalbums(artist_id, album_id) VALUES (2, 2);
+INSERT INTO artistsalbums(artist_id, album_id) VALUES (3, 3);
+
+-- artist songs
+INSERT INTO artistssongs(artist_id, song_id) VALUES (1, 1);
+INSERT INTO artistssongs(artist_id, song_id) VALUES (2, 2);
+INSERT INTO artistssongs(artist_id, song_id) VALUES (2, 3);
+INSERT INTO artistssongs(artist_id, song_id) VALUES (3, 4);
+INSERT INTO artistssongs(artist_id, song_id) VALUES (3, 5);
+
+
+-- producer albums
+INSERT INTO produceralbums(producer_id, album_id) VALUES (1, 1);
+INSERT INTO produceralbums(producer_id, album_id) VALUES (1, 2);
+INSERT INTO produceralbums(producer_id, album_id) VALUES (1, 3);
+
+-- producer songs
+INSERT INTO producersongs(producer_id, song_id) VALUES (1, 1);
+INSERT INTO producersongs(producer_id, song_id) VALUES (1, 2);
+INSERT INTO producersongs(producer_id, song_id) VALUES (1, 3);
+INSERT INTO producersongs(producer_id, song_id) VALUES (1, 4);
+INSERT INTO producersongs(producer_id, song_id) VALUES (1, 5);
+
+-- album genres
+INSERT INTO albumgenres(album_id, genre) VALUES (1, "Pre-K");
+INSERT INTO albumgenres(album_id, genre) VALUES (2, "Country");
+INSERT INTO albumgenres(album_id, genre) VALUES (3, "Classical");
+
+-- album reviews
+CALL createAlbumReview(5, "Maggie", "Example review", "2021-08-12", "Itsy Bitsy Spider Hits");
+CALL createAlbumReview(4, "Luke", "Example review", "2021-10-11", "Johnny Cash Hits");
+CALL createAlbumReview(3, "Jake", "Example review", "2021-11-11", "Mozart Hits");
+
+
+-- songs genres
+INSERT INTO songgenres(song_id, genre) VALUES (1, "Pre-K");
+INSERT INTO songgenres(song_id, genre) VALUES (2, "Country");
+INSERT INTO songgenres(song_id, genre) VALUES (3, "Country");
+INSERT INTO songgenres(song_id, genre) VALUES (4, "Classical");
+INSERT INTO songgenres(song_id, genre) VALUES (5, "Classical");
+
+-- song instruments
+INSERT INTO songinstruments(song_id, instrumentName) VALUES (2, "Guitar");
+INSERT INTO songinstruments(song_id, instrumentName) VALUES (3, "Guitar");
+INSERT INTO songinstruments(song_id, instrumentName) VALUES (4, "Classical Band");
+INSERT INTO songinstruments(song_id, instrumentName) VALUES (5, "Classical Band");
+
+-- song review
+CALL createSongReview(5, "Maggie", "Example review", "2021-08-11", "Itty Bitty Spider");
+
+CALL createSongReview(4, "Luke", "Example review", "2021-10-11", "Folsom Prison Blues");
+
+CALL createSongReview(4, "Jake", "Example review", "2021-11-11", "Fantasia in D Minor, K. 397");
+
