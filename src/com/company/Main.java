@@ -7,8 +7,8 @@ import java.util.*;
 
 public class Main {
     static final String URL = "jdbc:mysql://localhost/musicReview";
-    static String mySqlUser = "root";
-    static String mySqlPass = "Tugboat1812"; // Enter your password here
+    static String mySqlUser = ""; // Enter  your username here
+    static String mySqlPass = ""; // Enter your password here
     static Scanner input = new Scanner(System.in);
     static final String USAGE = "Usage:\n" +
             "List [entity type] [options] \n" +
@@ -37,8 +37,8 @@ public class Main {
             "    - Determines how to order the results. \n More listing options will be added in the future!";
 
 
-    static String accountUsername = "Luke";
-    static String accountPassword = "Password";
+    static String accountUsername = "";
+    static String accountPassword = "";
 
     // Argument String constants
     static final String GENRE = "--genre";
@@ -53,11 +53,6 @@ public class Main {
 
     public static void main(String[] args) {
 
-//        System.out.println("Enter the MySql username");
-//        mySqlUser = input.next();
-//        System.out.println("Enter the MySql password");
-//        mySqlPass = input.next();
-
 
 
         try(Connection conn = DriverManager.getConnection(URL, mySqlUser, mySqlPass);
@@ -66,7 +61,7 @@ public class Main {
 
             // Account
             ResultSet accounts = stmt.executeQuery("SELECT * FROM musicReview.reviewerUser;");
-            List<String[]> accountInfo = new ArrayList<>(); // [username, userPassword, email, name ]
+            List<String[]> accountInfo = new ArrayList<>();
             while (accounts.next()) {
                 accountInfo.add(new String[]{
                         accounts.getString("username"),
@@ -146,7 +141,6 @@ public class Main {
                     }
                 }
                 sections.add(currentWord);
-                //System.out.println(sections);
                 if (command.toLowerCase().startsWith("quit")) {
                     break;
                 }
@@ -170,10 +164,9 @@ public class Main {
                 boolean navigable = false;
                 String subQueryStr = String.format("SELECT * FROM %s WHERE %s = '%s';", entityType, entityType.concat("Name"), entityName);
                 switch(operation) {
-                    case "writereview": //seemingly done, needs testing
+                    case "writereview":
                         query = createReviewCommand(sections);
                         statementToExecute = conn.prepareStatement(query);
-                        //System.out.println(statementToExecute);
                         break;
                     case "list":
                         query = "SELECT * FROM " + entityType;
@@ -182,13 +175,11 @@ public class Main {
                                     .concat(String.join(" ", arguments.get(SORT)));
                         }
                         statementToExecute = conn.prepareStatement(query.concat(";"));
-                        //System.out.println(statementToExecute);
                         navigable = true;
                         break;
                     case "reviews":
                         String reviewId = entityType.concat("_id");
                         String reviewTable = entityType.concat("Review");
-                        //System.out.println(subQueryStr);
                         PreparedStatement reviewStmt = conn.prepareStatement(subQueryStr);
                         ResultSet reviewResult = reviewStmt.executeQuery();
                         String entityIdStr = "";
@@ -214,14 +205,11 @@ public class Main {
                         }
                         statementToExecute = conn.prepareStatement(query.concat(";"));
                         navigable = true;
-                        //System.out.println(statementToExecute);
                         break;
-                    case "deletereview": // Done
+                    case "deletereview":
                         String deleteTable = entityType.concat("Review");
-                        //System.out.println(entityName);
                         query = String.format("DELETE FROM %s WHERE reviewer = '%s' AND %s = %s;", deleteTable, accountUsername, "reviewId", Integer.parseInt(entityName));
                         statementToExecute = conn.prepareStatement(query);
-                        //System.out.println("Delete query: " + statementToExecute);
                         break;
                     default:
                         throw new IllegalArgumentException("Unidentified command: " + command);
@@ -229,7 +217,6 @@ public class Main {
                 ResultSet results;
                 if (navigable) {
                     results = statementToExecute.executeQuery();
-                    // Once query is finished, display everything
                     ResultSetMetaData md = results.getMetaData();
                     int colCount = md.getColumnCount();
                     while (results.next()) {
@@ -310,7 +297,6 @@ public class Main {
      * @return The SQL command for adding a review
      */
     static String createReviewCommand(List<String> argList) {
-        //List<String> argList = Stream.of(command.split("(?![^\\s\"']+|\"([^\"]*)\"|'([^']*)')")).collect(Collectors.toList());
         String reviewStr = "CALL create%sReview(%f, '%s', '%s', '%s', '%s');";
         String entityType = argList.get(1);
         String entityName = argList.get(2);
@@ -335,7 +321,6 @@ public class Main {
 
     static Map<String, List<String>> parseCommand(List<String> argList) {
         Map<String, List<String>> args = new HashMap<>();
-        //List<String> argList = Stream.of(command.split("(?![^\\s\"']+|\"([^\"]*)\"|'([^']*)')")).collect(Collectors.toList());
         String baseCmd = argList.get(0);
         args.put("COMMAND", Collections.singletonList(baseCmd));
         args.put("entityType", Collections.singletonList(argList.get(1)));
@@ -347,7 +332,7 @@ public class Main {
         // parsing options
         for (int i = startIndex; i < argList.size(); i++) {
             String arg = argList.get(i);
-            if (!arg.startsWith("--")) { // not flag argument
+            if (!arg.startsWith("--")) {
                 continue;
             }
             List<String> values = new ArrayList<>();
