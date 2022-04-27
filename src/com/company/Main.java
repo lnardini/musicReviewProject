@@ -29,14 +29,14 @@ public class Main {
             "Review Options:\n" +
             "—sort [criteria ASC/DESC] \n" +
             "    - Determines how to order the results\n" +
-            "—stars [LowerBound UpperBound]\n" +
-            "    - Filters for reviews with the provided star count bounds \n" +
+            "—stars [<, >, =] [bound]\n" +
+            "    - Filters for reviews with the provided star count condition \n" +
             "\n" +
             "Listing Options:\n" +
             "—genre [genre]\n" +
             "    - Filters for entities that fall under the listed genre\n" +
             "—author [name]\n" +
-            "    - Filters for songs or albums \n" +
+            "    - Filters for songs or albums with the given author\n" +
             "—sort [criteria ASC/DESC] \n" +
             "    - Determines how to order the results. \n" +
             "—instrument [instrument]\n" +
@@ -51,9 +51,10 @@ public class Main {
     static final String AUTHOR = "--author";
     static final String SORT = "--sort";
     static final String STARS = "--stars";
+    static final String DATE = "--date";
     static final Date currentDate = new Date(System.currentTimeMillis());
 
-    static final List<String> FLAGS = Arrays.asList(GENRE, AUTHOR, SORT, STARS);
+    static final List<String> FLAGS = Arrays.asList(GENRE, AUTHOR, SORT, STARS, DATE);
 
 
     public static void main(String[] args) {
@@ -71,7 +72,7 @@ public class Main {
 
             // Account
             ResultSet accounts = stmt.executeQuery("SELECT * FROM musicReview.reviewerUser;");
-            List<String[]> accountInfo = new ArrayList<>(); // [username, userPassword, email]
+            List<String[]> accountInfo = new ArrayList<>(); // [username, userPassword, email, name ]
             while (accounts.next()) {
                 accountInfo.add(new String[]{
                         accounts.getString("username"),
@@ -121,8 +122,7 @@ public class Main {
                 String command = "";
                 if (input.hasNextLine()) {
                     command = input.nextLine();
-                }
-                System.out.println("Command: " + command);
+                };
 
                 if (command.toLowerCase().startsWith("quit")) {
                     break;
@@ -143,29 +143,40 @@ public class Main {
                         statementToExecute = conn.prepareStatement(query);
                         break;
                     case "list": //TODO: Most of it. Need to formulate query with sorting and stars
-                        boolean anyOptions = arguments.containsKey(STARS) || arguments.containsKey(GENRE) || arguments.containsKey(AUTHOR);
-                        query = "SELECT * FROM " + entityType.concat(anyOptions? "WHERE" : "");
-                        if (arguments.containsKey(STARS)) {
-                            List<String> bounds = arguments.get(STARS);
-                            //String starsCond = "WHERE stars"
+                        boolean anyListOptions = arguments.containsKey(STARS) || arguments.containsKey(GENRE) || arguments.containsKey(AUTHOR) || arguments.containsKey(DATE);
+                        query = "SELECT * FROM " + entityType.concat(anyListOptions? "WHERE" : "");
+//                        if (arguments.containsKey(STARS)) {
+//                            List<String> bounds = arguments.get(STARS);
+//                            String starsCond = String.format("stars %s %s", bounds.get(0), bounds.get(1));
+//                            query = query.concat(starsCond)
+//                        }
 
-                        }
                         break;
-                    case "reviews": //TODO: Integrate review procedures as well as sorting and stars
-                        query = "CALL " + entityType + "JoinReview";
+                    case "reviews":
+                        boolean anyReviewOptions = arguments.containsKey(STARS) || arguments.containsKey(DATE);
+                        query = "SELECT * FROM " + entityType.concat("Review").concat(anyReviewOptions? " WHERE " : "");
+                        if (arguments.containsKey(STARS)) {
+                            query = query.concat("stars ")
+                                    .concat(String.join(" ", arguments.get(STARS)))
+                                    .concat(arguments.containsKey(DATE)? " AND " : "");
+                        }
+                        if (arguments.containsKey(DATE)) {
+                            query = query.concat("reviewDate ")
+                                    .concat(String.join(" ", arguments.get(DATE)));
+                        }
                         if (arguments.containsKey(SORT)) {
-                            query = query.concat("ORDER BY").concat(String.join(" ", arguments.get(SORT)));
+                            query = query.concat("ORDER BY ")
+                                    .concat(String.join(" ", arguments.get(SORT)));
                         }
                         statementToExecute = conn.prepareStatement(query);
+                        System.out.println(statementToExecute);
                         break;
-                    case "deletereview": //seemingly done, needs testing
+                    case "deletereview": // Done
                         String deleteId = entityType.concat("_id");
                         String deleteTable = entityType.concat("Review");
-
-                        PreparedStatement entityStmt = conn.prepareStatement("SELECT * FROM ? WHERE ? = ?");
-                        entityStmt.setString(1, entityType);
-                        entityStmt.setString(2, deleteId);
-                        entityStmt.setString(3, entityName);
+                        String statementStr = String.format("SELECT * FROM %s WHERE %s = '%s';", entityType, entityType.concat("Name"), entityName);
+                        System.out.println(statementStr);
+                        PreparedStatement entityStmt = conn.prepareStatement(statementStr);
                         ResultSet entityResult = entityStmt.executeQuery();
                         int entityId = entityResult.getInt(deleteId);
 
@@ -179,6 +190,7 @@ public class Main {
                     default:
                         throw new IllegalArgumentException("Unidentified command: " + command);
                 }
+
 
                 //ResultSet results = statementToExecute.executeQuery();
 
@@ -209,7 +221,6 @@ public class Main {
      * @param accountInfo the information of the other accounts (to ensure no repeated usernames or emails)
      */
     static String[] createAccount(List<String[]> accountInfo) {
-        // TODO: Prompt user for username, password, email, and full name. Ensure username and email are unique. Return array of these items
         String[] account = new String[4];
         //Username
         boolean repeatUsername = true;
@@ -229,6 +240,7 @@ public class Main {
         }
         System.out.println("Enter the password for your new account");
         account[1] = input.next();
+        //TODO: Check emails are unique, ask for email
         System.out.println("Enter the name for this account");
         account[3] = input.next();
 
