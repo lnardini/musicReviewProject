@@ -3,10 +3,7 @@ package com.company;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 
 public class Main {
     static final String URL = "jdbc:mysql://localhost/musicReview";
@@ -194,9 +191,13 @@ public class Main {
                         //System.out.println(subQueryStr);
                         PreparedStatement reviewStmt = conn.prepareStatement(subQueryStr);
                         ResultSet reviewResult = reviewStmt.executeQuery();
-                        String entityIdStr = ""; //TODO: Handle if no entity exists
+                        String entityIdStr = "";
                         if (reviewResult.next()) {
                             entityIdStr = Integer.toString(reviewResult.getInt(reviewId));
+                        }
+                        if (entityIdStr.isEmpty()) {
+                            System.out.println("Unknown entity " + entityName + ". Please try again");
+                            continue;
                         }
                         query = "SELECT * FROM " + entityType.concat("Review WHERE " + reviewId + " = " + entityIdStr);
                         if (arguments.containsKey(STARS)) {
