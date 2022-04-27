@@ -9,31 +9,60 @@ import java.util.stream.Stream;
 public class Main {
     static final String URL = "jdbc:mysql://localhost/musicReview";
     static String mySqlUser = "root";
-    static String mySqlPass = ""; // Enter your password here
+    static String mySqlPass = "Tugboat1812"; // Enter your password here
     static Scanner input = new Scanner(System.in);
-    static final String USAGE = "Temporary usage string";
+    static final String USAGE = "Usage:\n" +
+            "List [entity type] [options] \n" +
+            "    - Lists the provided entity types with the following filters\n" +
+            "Reviews [entity type] [entity name] [options]\n" +
+            "    - Lists the reviews for the given entity with the following filters\n" +
+            "writeReview [entity type] [entity name]\n" +
+            "    - Starts providing prompts for a review of the provided entity \n" +
+            "deleteReview [entityType] [entityName]\n" +
+            "    - Deletes the review left by this user on the specified entity, if it exists.\n" +
+            "\n" +
+            "Entity types:\n" +
+            "- Song\n" +
+            "- Album\n" +
+            "- Artist\n" +
+            "\n" +
+            "Review Options:\n" +
+            "—sort [criteria ASC/DESC] \n" +
+            "    - Determines how to order the results\n" +
+            "—stars [LowerBound UpperBound]\n" +
+            "    - Filters for reviews with the provided star count bounds \n" +
+            "\n" +
+            "Listing Options:\n" +
+            "—genre [genre]\n" +
+            "    - Filters for entities that fall under the listed genre\n" +
+            "—author [name]\n" +
+            "    - Filters for songs or albums \n" +
+            "—sort [criteria ASC/DESC] \n" +
+            "    - Determines how to order the results. \n" +
+            "—instrument [instrument]\n" +
+            "    - Filters for songs performed with or artists that play the given instrument";
 
 
     static String accountUsername = "";
     static String accountPassword = "";
 
     // Argument String constants
-    static final String ALLGENRE = "--allGenre";
-    static final String ANYGENRE = "--anyGenre";
+    static final String GENRE = "--genre";
     static final String AUTHOR = "--author";
     static final String SORT = "--sort";
+    static final String STARS = "--stars";
     static final Date currentDate = new Date(System.currentTimeMillis());
 
-    static final List<String> FLAGS = Arrays.asList(ALLGENRE, ANYGENRE, AUTHOR, SORT);
+    static final List<String> FLAGS = Arrays.asList(GENRE, AUTHOR, SORT, STARS);
 
 
     public static void main(String[] args) {
-        /**
-        System.out.println("Enter the MySql username");
-        mySqlUser = input.next();
-        System.out.println("Enter the MySql password");
-        mySqlPass = input.next();
-         **/
+
+//        System.out.println("Enter the MySql username");
+//        mySqlUser = input.next();
+//        System.out.println("Enter the MySql password");
+//        mySqlPass = input.next();
+
 
 
         try(Connection conn = DriverManager.getConnection(URL, mySqlUser, mySqlPass);
@@ -102,30 +131,59 @@ public class Main {
                     System.out.println(USAGE);
                     continue;
                 }
-                String query = "";
+                String query;
                 Map<String, List<String>> arguments = Main.parseCommand(command);
                 String operation = arguments.get("COMMAND").get(0).toLowerCase();
+                String entityType = arguments.get("entityType").get(0).toLowerCase();
+                String entityName = arguments.containsKey("entityName")? arguments.get("entityName").get(0) : "";
+                PreparedStatement statementToExecute = null;
                 switch(operation) {
-                    case "writereview":
+                    case "writereview": //seemingly done, needs testing
                         query = createReviewCommand(command);
+                        statementToExecute = conn.prepareStatement(query);
                         break;
                     case "list":
-                        query = ""; // TODO
-                        break;
+                        boolean anyOptions = arguments.containsKey(STARS) || arguments.containsKey(GENRE) || arguments.containsKey(AUTHOR);
+                        query = "SELECT * FROM " + entityType.concat(anyOptions? "WHERE" : "");
+                        if (arguments.containsKey(STARS)) {
+                            List<String> bounds = arguments.get(STARS);
+                            //String starsCond = "WHERE stars"
 
-                    case "reviews":
-                        query = "SELECT stars, reviewDescription, reviewDate FROM " + arguments.get("SUBJECT").get(0).toLowerCase().concat("Review");
-                        if (arguments.containsKey(SORT)) {
-
-                            query = query.concat("ORDER BY").concat(String.join(" ", arguments.get(SORT)));
                         }
                         break;
+                    case "reviews": //seemingly done, needs testing
+                        query = "SELECT stars, reviewDescription, reviewDate FROM " + entityType.concat("Review");
+                        if (arguments.containsKey(SORT)) {
+                            query = query.concat("ORDER BY").concat(String.join(" ", arguments.get(SORT)));
+                        }
+                        statementToExecute = conn.prepareStatement(query);
+                        break;
+                    case "deletereview": //seemingly done, needs testing
+                        String deleteId = entityType.concat("_id");
+                        String deleteTable = entityType.concat("Review");
+
+                        PreparedStatement entityStmt = conn.prepareStatement("SELECT * FROM ? WHERE ? = ?");
+                        entityStmt.setString(1, entityType);
+                        entityStmt.setString(2, deleteId);
+                        entityStmt.setString(3, entityName);
+                        ResultSet entityResult = entityStmt.executeQuery();
+                        int entityId = entityResult.getInt(deleteId);
+
+                        statementToExecute = conn.prepareStatement("DELETE FROM ? WHERE reviewer = ? AND ? = ?;");
+                        statementToExecute.setString(1, deleteTable);
+                        statementToExecute.setString(2, accountUsername);
+                        statementToExecute.setString(3, deleteId);
+                        statementToExecute.setInt(4, entityId);
+                        System.out.println("Delete query: " + statementToExecute);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unidentified command: " + command);
                 }
 
+                //ResultSet results = statementToExecute.executeQuery();
+
                 // Once query is finished, display everything
-                System.out.println("Query: " + query);
-                /**
-                ResultSet results = stmt.executeQuery(query);
+                /**;
                 ResultSetMetaData md = results.getMetaData();
                 int colCount = md.getColumnCount();
                 while (results.next()) {
@@ -200,7 +258,7 @@ public class Main {
         System.out.println("Please enter a brief (<256 char) description of the " + entityType + " or press 'Enter' to skip.");
         String description = input.nextLine();
         String reviewer = accountUsername;
-        int entityId = -1;//TODO
+        int entityId = -1;//TODO: Add subquery to get entity ID
         return String.format(reviewStr, table, stars, description, reviewer, currentDate, entityId);
     }
 
@@ -212,9 +270,10 @@ public class Main {
         System.out.println(argList);
         String baseCmd = argList.get(0);
         args.put("COMMAND", Collections.singletonList(baseCmd));
-        args.put("SUBJECT", Collections.singletonList(argList.get(1)));
+        args.put("entityType", Collections.singletonList(argList.get(1)));
+        args.put("entityName", Collections.singletonList((argList.get(2))));
         // parsing options
-        for (int i = 2; i < argList.size(); i++) {
+        for (int i = 3; i < argList.size(); i++) {
             String arg = argList.get(i);
             if (!arg.startsWith("--")) { // not flag argument
                 continue;
