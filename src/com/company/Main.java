@@ -56,10 +56,10 @@ public class Main {
 
     public static void main(String[] args) {
 
-        System.out.println("Enter the MySql username");
-        mySqlUser = input.next();
-        System.out.println("Enter the MySql password");
-        mySqlPass = input.next();
+//        System.out.println("Enter the MySql username");
+//        mySqlUser = input.next();
+//        System.out.println("Enter the MySql password");
+//        mySqlPass = input.next();
 
 
 
@@ -148,6 +148,8 @@ public class Main {
                             currentWord = currentWord.concat(String.valueOf(c));
                     }
                 }
+                sections.add(currentWord);
+                //System.out.println(sections);
                 if (command.toLowerCase().startsWith("quit")) {
                     break;
                 }
@@ -168,6 +170,7 @@ public class Main {
                 String entityType = arguments.get("entityType").get(0).toLowerCase();
                 String entityName = arguments.containsKey("entityName")? arguments.get("entityName").get(0) : "";
                 PreparedStatement statementToExecute;
+                boolean navigable = false;
                 String subQueryStr = String.format("SELECT * FROM %s WHERE %s = '%s';", entityType, entityType.concat("Name"), entityName);
                 switch(operation) {
                     case "writereview": //seemingly done, needs testing
@@ -183,6 +186,7 @@ public class Main {
                         }
                         statementToExecute = conn.prepareStatement(query.concat(";"));
                         //System.out.println(statementToExecute);
+                        navigable = true;
                         break;
                     case "reviews":
                         String reviewId = entityType.concat("_id");
@@ -190,7 +194,10 @@ public class Main {
                         //System.out.println(subQueryStr);
                         PreparedStatement reviewStmt = conn.prepareStatement(subQueryStr);
                         ResultSet reviewResult = reviewStmt.executeQuery();
-                        String entityIdStr = Integer.toString(reviewResult.getInt(reviewId));
+                        String entityIdStr = ""; //TODO: Handle if no entity exists
+                        if (reviewResult.next()) {
+                            entityIdStr = Integer.toString(reviewResult.getInt(reviewId));
+                        }
                         query = "SELECT * FROM " + entityType.concat("Review WHERE " + reviewId + " = " + entityIdStr);
                         if (arguments.containsKey(STARS)) {
                             query = query.concat(" WHERE stars ")
@@ -206,40 +213,39 @@ public class Main {
                                     .concat(String.join(" ", arguments.get(SORT)));
                         }
                         statementToExecute = conn.prepareStatement(query.concat(";"));
+                        navigable = true;
                         //System.out.println(statementToExecute);
                         break;
                     case "deletereview": // Done
-                        String deleteId = entityType.concat("_id");
                         String deleteTable = entityType.concat("Review");
-                        //System.out.println(subQueryStr);
-                        PreparedStatement entityStmt = conn.prepareStatement(subQueryStr);
-                        ResultSet entityResult = entityStmt.executeQuery();
-                        int entityId = entityResult.getInt(deleteId);
-
-                        statementToExecute = conn.prepareStatement("DELETE FROM ? WHERE reviewer = ? AND ? = ?;");
-                        statementToExecute.setString(1, deleteTable);
-                        statementToExecute.setString(2, accountUsername);
-                        statementToExecute.setString(3, deleteId);
-                        statementToExecute.setInt(4, entityId);
+                        //System.out.println(entityName);
+                        query = String.format("DELETE FROM %s WHERE reviewer = '%s' AND %s = %s;", deleteTable, accountUsername, "reviewId", Integer.parseInt(entityName));
+                        statementToExecute = conn.prepareStatement(query);
                         //System.out.println("Delete query: " + statementToExecute);
                         break;
                     default:
                         throw new IllegalArgumentException("Unidentified command: " + command);
                 }
-
-
-                ResultSet results = statementToExecute.executeQuery();
-
-                // Once query is finished, display everything
-                ResultSetMetaData md = results.getMetaData();
-                int colCount = md.getColumnCount();
-                while (results.next()) {
-                    for (int i = 1; i <= colCount; i++) {
-                        if (i > 1) System.out.print(" | ");
-                        System.out.print(md.getColumnName(i) + ": " + results.getString(i));
+                ResultSet results;
+                if (navigable) {
+                    results = statementToExecute.executeQuery();
+                    // Once query is finished, display everything
+                    ResultSetMetaData md = results.getMetaData();
+                    int colCount = md.getColumnCount();
+                    while (results.next()) {
+                        for (int i = 1; i <= colCount; i++) {
+                            if (i > 1) System.out.print(" | ");
+                            System.out.print(md.getColumnName(i) + ": " + results.getString(i));
+                        }
+                        System.out.println();
                     }
-                    System.out.println();
+                } else {
+                    boolean success = statementToExecute.execute();
+                    System.out.println("Update succeeded!");
                 }
+
+
+
 
             }
 
@@ -305,14 +311,14 @@ public class Main {
      */
     static String createReviewCommand(List<String> argList) {
         //List<String> argList = Stream.of(command.split("(?![^\\s\"']+|\"([^\"]*)\"|'([^']*)')")).collect(Collectors.toList());
-        String reviewStr = "CALL create%sReview(%f, %s, %s, %s, %s)";
+        String reviewStr = "CALL create%sReview(%f, '%s', '%s', '%s', '%s');";
         String entityType = argList.get(1);
         String entityName = argList.get(2);
         System.out.println("Entity type: " + entityType);
         System.out.println("What would you rate " + entityName + "?");
         double stars;
         do {
-            System.out.println("Enter the number of stars between 0.5 to 5");
+            System.out.println("Enter the number of stars between 0 to 5");
             stars = input.nextDouble();
         } while (stars > 5.0 || stars < 0);
 
