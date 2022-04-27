@@ -20,7 +20,7 @@ public class Main {
             "    - Lists the reviews for the given entity with the following filters\n" +
             "writeReview [entity type] [entity name]\n" +
             "    - Starts providing prompts for a review of the provided entity \n" +
-            "deleteReview [entityType] [entityName]\n" +
+            "deleteReview [entityType] [entityId]\n" +
             "    - Deletes the review left by this user on the specified entity, if it exists.\n" +
             "\n" +
             "Entity types:\n" +
@@ -200,12 +200,11 @@ public class Main {
                         }
                         query = "SELECT * FROM " + entityType.concat("Review WHERE " + reviewId + " = " + entityIdStr);
                         if (arguments.containsKey(STARS)) {
-                            query = query.concat(" WHERE stars ")
-                                    .concat(String.join(" ", arguments.get(STARS)))
-                                    .concat(arguments.containsKey(DATE)? " AND " : "");
+                            query = query.concat(" AND stars ")
+                                    .concat(String.join(" ", arguments.get(STARS)));
                         }
                         if (arguments.containsKey(DATE)) {
-                            query = query.concat("reviewDate ")
+                            query = query.concat("AND reviewDate ")
                                     .concat(String.join(" ", arguments.get(DATE)));
                         }
                         if (arguments.containsKey(SORT)) {
